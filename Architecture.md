@@ -95,7 +95,7 @@ Entity - object:
 - has various properties
   - example - replication factor
 - can be sliced across different OSTs (aka Chunks)
-  - **IMPORTANT**: key difference of rawstor from other solutions is that you can deside how your data will be slided across OSTs (Chunk size, distribution strategy, etc.)
+  - **IMPORTANT**: key difference of rawstor from other solutions is that you can deside how your data will be sliced across OSTs (chunk size, distribution strategy, etc.)
     - from "local" storage (one whole volume on one OST only as one `chunk`)
     - to "distributed" storage (like `CEPH` - small chunks distributed across whole cluster, although this strategy is a little bit discouraged in Rawstor, we already have Ceph, Vitastor and other Ceph-like storages)
     - best way to look at Rawstor as a "middle ground" between local and distributed storage (DRBD with massive slicing and feature-rich client, or shared-nothing Lustre with redundancy out of the box)
