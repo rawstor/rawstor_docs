@@ -34,7 +34,7 @@ block-beta
   cc["DATA"]:7
 ```
 
-#### IO requests
+#### IO responses
 - See `proto_resp_frame_t` struct
 - `cid` - command ID, used to correlate request and response if many requests issued simultaneously
 - `res` - response code, if positive, request was successful (bytes written/read, etc.), negative - error code
