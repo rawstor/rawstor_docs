@@ -10,7 +10,7 @@
 - CMD_READ
 - CMD_WRITE
 - CMD_DISCARD
-- TDB, other commands are not defined yet.
+- TBD, other commands are not defined yet.
 
 #### Auth + initialization
 - First request via connection should be `CMD_SET_OBJECT` command (see `proto_basic_frame_t` struct)
@@ -25,24 +25,26 @@ block-beta
 #### IO requests
 - See `proto_io_frame_t` struct
 - `cid` - command ID, used to correlate request and response if many requests issued simultaneously
+- `hash` - hash of request data if any (for write requests), now xxh3 used
 - after this request frame, data follows if any (for write requests)
 
 ```mermaid
 block-beta
   columns 6
-  0["uint32_t magic"]:1 a["int commands_t"]:1 aa["u_int16_t cid"] b["u_int64_t offset"]:2 c["u_int64_t len"]:2
-  cc["DATA"]:7
+  0["uint32_t magic"]:2 a["int commands_t"]:1 aa["uint16_t cid"]:1 b["uint64_t offset"]:4 c["uint32_t len"]:2 d["uint64_t hash"]:4
+  cc["DATA"]:4
 ```
 
 #### IO responses
 - See `proto_resp_frame_t` struct
 - `cid` - command ID, used to correlate request and response if many requests issued simultaneously
 - `res` - response code, if positive, request was successful (bytes written/read, etc.), negative - error code
-- after this response frame, data follows if any (for read requests)
+- `hash` - hash of request data if any (for read responses), now xxh3 used
+- after this response frame, data follows if any (for read responses)
 
 ```mermaid
 block-beta
   columns 4
-  0["uint32_t magic"]:1 a["int commands_t"]:1 aa["u_int16_t cid"]:1 c["u_int64_t: res"]:2
-  cc["DATA"]:5
+  0["uint32_t magic"]:2 a["int commands_t"]:1 aa["uint16_t cid"]:1 c["uint64_t: res"]:4 d["uint64_t hash"]:4
+  cc["DATA"]:4
 ```
