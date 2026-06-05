@@ -5,21 +5,23 @@
 - Magic number for protocol frames is `0x72737472 // "rstr" as ascii` (used for consistency and endianness checks)
 
 #### commands:
-(see `commands_t` enum)
+(see `commands_enum_t` enum)
 - CMD_SET_OBJECT
 - CMD_READ
 - CMD_WRITE
 - CMD_DISCARD
+- CMD_ALLOCATE_OBJ_CHUNK
 - TBD, other commands are not defined yet.
 
 #### Auth + initialization
 - First request via connection should be `CMD_SET_OBJECT` command (see `proto_basic_frame_t` struct)
+- `cid` - command ID, used to correlate request and response if many requests issued simultaneously
 - TBD: Authentication mechanism, cababilities negotiation, etc.
 
 ```mermaid
 block-beta
   columns 8
-  0["uint32_t magic"]:1 a["commands_t = CMD_SET_OBJECT"]:1 b["char[OBJID_LEN] objid"]:2
+  0["uint32_t magic"]:2 a["cmd = CMD_SET_OBJECT"]:1 aa["uint16_t cid"]:1 b["char[OBJID_LEN] objid"]:4
 ```
 
 #### IO requests
@@ -30,9 +32,9 @@ block-beta
 
 ```mermaid
 block-beta
-  columns 6
-  0["uint32_t magic"]:2 a["int commands_t"]:1 aa["uint16_t cid"]:1 b["uint64_t offset"]:4 c["uint32_t len"]:2 d["uint64_t hash"]:4
-  cc["DATA"]:4
+  columns 14
+  0["uint32_t magic"]:2 a["uint16_t cmd"]:1 aa["uint16_t cid"]:1 b["uint64_t offset"]:4 c["uint32_t len"]:2 d["uint64_t hash"]:4
+  cc["DATA"]:14
 ```
 
 #### IO responses
@@ -44,7 +46,7 @@ block-beta
 
 ```mermaid
 block-beta
-  columns 4
-  0["uint32_t magic"]:2 a["int commands_t"]:1 aa["uint16_t cid"]:1 c["uint64_t: res"]:4 d["uint64_t hash"]:4
-  cc["DATA"]:4
+  columns 10
+  0["uint32_t magic"]:2 a["uint16_t cmd"]:1 aa["uint16_t cid"]:1 c["uint32_t res"]:2 d["uint64_t hash"]:4
+  cc["DATA"]:10
 ```
