@@ -5,7 +5,7 @@
 - Magic number for protocol frames is `0x72737472 // "rstr" as ascii` (used for consistency and endianness checks)
 
 #### commands:
-(see `commands_enum_t` enum)
+(see `commands_t` enum)
 - CMD_SET_OBJECT
 - CMD_READ
 - CMD_WRITE
@@ -47,6 +47,6 @@ block-beta
 ```mermaid
 block-beta
   columns 10
-  0["uint32_t magic"]:2 a["uint16_t cmd"]:1 aa["uint16_t cid"]:1 c["uint32_t res"]:2 d["uint64_t hash"]:4
+  0["uint32_t magic"]:2 a["uint16_t cmd"]:1 aa["uint16_t cid"]:1 c["int32_t res"]:2 d["uint64_t hash"]:4
   cc["DATA"]:10
 ```
