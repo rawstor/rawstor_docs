@@ -71,10 +71,13 @@ in four places and spent on one addition:
   overloading `res`, resolving the standing TODO in `protocol.h`. (This is,
   amusingly, the response frame of the rejected separate MDS protocol — the
   frame survives, the magic does not.)
-- **No legacy acceptance**: `chunk_meta` starts at `format_version` 1. The
-  `.spec` v0→v1 migration and the `sync_id == 0` = "pre-mirroring copy"
-  semantics in librawstor are dropped in stage 1 rather than carried into the
-  chunked world.
+- **No legacy acceptance**: `chunk_meta` starts at `format_version` 1; the
+  `.spec` v0 (size-only) acceptance/migration in librawstor is dropped rather
+  than carried into the chunked world. Note: `sync_id == 0` is **not** a
+  legacy shim and stays — it is the live "blank copy, never part of a sync
+  set" marker written at create and relied on by F10 recreate (a blank copy
+  with a random `sync_id` would read as split brain at the next open; with
+  the current set's `sync_id` it would claim data it does not have).
 - **Opcode space**: regrouped into reserved ranges per role (session / data /
   shared metadata / volume) instead of appending to one enum — free today, a
   breaking change after the first install.
@@ -629,8 +632,11 @@ of normal opens/closes.
 - Witness subset = existing `SPEC` / `SET_STATE`; the meta body is extended
   directly with the record kind (`DIRTY_OPEN` / `DIRTY_DEGRADED`) and
   `survivors[]` — no parallel opcodes, no legacy meta-body acceptance.
-- Dropped in stage 1 (no live installations): `.spec` v0→v1 migration,
-  `sync_id == 0` = "pre-mirroring copy" semantics.
+- Dropped in stage 1 (no live installations): `.spec` v0 acceptance/migration
+  and the client-side tolerance of `-ENOSYS` from `SET_STATE` (a member that
+  cannot record metadata must degrade, not silently weaken the barrier).
+  `sync_id == 0` stays: it is the blank-copy marker, not a compat shim (see
+  *Compatibility stance*).
 
 ## Implementation stages
 
