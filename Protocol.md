@@ -1,5 +1,12 @@
 # DRAFT: Rawstor Protocol design
 
+> The command list below predates the mirroring work (`SPEC`/`SET_STATE`/`FLUSH`
+> exist in `librawstor/include/rawstor/protocol.h`). MDS commands live in the
+> **same** protocol/command space — see [Mds.md](Mds.md), *Wire protocol*,
+> *Compatibility stance* and *Protocol deltas* (`CMD_LIST_CHUNKS`, `CMD_VOL_*`,
+> the unified `{res, len, hash}` response frame, version + feature bits in the
+> `SET_OBJECT` handshake, `map_epoch` in the IO frame).
+
 - TCP stateful connection
 - Any request will have response frame before actual data transition (see `proto_resp_frame_t`)
 - Magic number for protocol frames is `0x72737472 // "rstr" as ascii` (used for consistency and endianness checks)
