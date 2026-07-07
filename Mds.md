@@ -455,6 +455,47 @@ reconstruct scan (below).
   members fails with `-ENOTSUP` in v1 (no fallback copies behind the caller's
   back).
 
+**v1 notes (shipped):**
+
+- **Classic LVM is `-ENOTSUP` too.** This section says lvm-*thin* for a
+  reason: a classic LVM snapshot needs a preallocated COW area — a hidden
+  full-size copy is exactly the fallback ruled out above. CoW on LVM waits
+  for an lvm-thin backend. zfs is the v1 CoW backend: snapshots are
+  `<parent>/<uuid>@s<snap_id>` (the `@s<id>` name *is* the version key —
+  nothing stored twice; `snapdev=visible` is set with every snapshot so
+  each one that exists is also openable), read via
+  `/dev/zvol/…@s<id>`, read-only at the device level too.
+- **Reads:** `<target>@<snap_id>` on the regular open
+  (`mds://host:port/<volume_id>@<snap_id>`, `ost://…/<uuid>@<snap_id>`);
+  the wire carries the version in the `val` field SET_OBJECT and SPEC
+  already had. Opening a snapshot **bypasses the mirror state machine
+  entirely** — no metadata compare, no quorum, no barriers, no resync, no
+  probe. That is not just an optimization: the frozen copy state is DIRTY
+  (snapshots are taken mid-session), which the live open logic would
+  treat as a crash to recover from. Immutability is what makes the bypass
+  sound: one reachable member serves, writes fail with EROFS.
+- **The two-phase begin is durable and never reuses an id** (per-volume
+  monotonic `next_snap_id`, fsync'd at begin): leftovers of a crashed
+  attempt can never alias a later snapshot. The reconstruct scan re-fences
+  the counter from every version it sees — garbage included.
+- **Chunks are CoW'd in descending index order** (chunk 0 last). A crashed
+  attempt therefore always leaves a hole at the low indices, and the
+  reconstruct scan can never mistake a partial leftover for a complete
+  (legitimately shorter, pre-resize) snapshot: a contiguous `0..max`
+  version proves itself, because index 0 exists only when every higher
+  index was already done. Complete versions found by the scan are
+  registered even if the commit never landed — they are indistinguishable
+  from committed ones and just as consistent (drain + FLUSH preceded the
+  CoWs); holed versions stay unregistered garbage.
+- **Volume deletion order matches snapshot deletion**: the MDS
+  unregisters the map first — which is also where "the volume still has
+  snapshots" refuses with `-EBUSY` *before* any data is touched — then
+  the chunk objects are destroyed.
+- **v1 caveat:** the CLI-driven snapshot assumes no concurrent writer —
+  the drain barrier is the writing client's duty and lives in its
+  process; a vhost/QEMU flush hook is future work. Snapshot redundancy
+  status surfacing is still TODO.
+
 ## Witness (stage 3)
 
 A witness is a **metadata-only member** of a mirrored object's quorum: it
