@@ -617,6 +617,35 @@ This same scan doubles as a scrub / consistency check. Witness records are
 rebuild every witness abstains until clients re-attach records in the course
 of normal opens/closes.
 
+**v1 notes (shipped as `rawstor-mds --reconstruct`, scan before serving):**
+
+- **No partial scans, by construction:** every OST of the topology must
+  answer `LIST_CHUNKS` or the reconstruct aborts. A half scan would
+  silently drop the unanswered OST's live copies from the map; an OST that
+  is really gone is removed from the topology first — an explicit
+  operator decision, not a timeout.
+- **The map is restored, the policy knobs are not.** `failure_domain`,
+  `stripe_width` and the placement seed are deliberately not persisted on
+  chunks (descriptor-only state); the rebuilt descriptor gets the weakest
+  constraints (per-OST domain, spread), `width` comes from the records.
+  Existing chunks keep their placement — the map is explicit — so only a
+  post-disaster resize places new chunks under the reset policy.
+- **Degraded chunks reconstruct degraded:** a chunk with some copies lost
+  keeps its surviving slots and `VOL_OPEN` serves them (the mirror layer
+  owns the redundancy question). A chunk with **no** surviving copy fails
+  the whole reconstruct loudly — the MDS must not pretend the volume is
+  whole, and it cannot invent data.
+- The tail chunk's stored size may be rounded up by a block backend (LVM
+  extent, ZFS volblocksize); the reconstructed `logical_size` takes the
+  smallest copy, clamped to `chunk_size` — never smaller than what was
+  written.
+- Snapshot-version records are skipped (stage 2); the full MDS serving
+  `LIST_CHUNKS` from its own index (the scrub comparison) is not
+  implemented yet.
+- Wire shape: the response payload is `res` chunk_meta records (the SPEC
+  meta body with `obj_id` = the physical id), bounded by the same 64 MiB
+  cap as the data commands.
+
 ## Protocol deltas (to Protocol.md)
 
 - New shared opcode `CMD_LIST_CHUNKS -> [(physical chunk_id, chunk_meta)]` —
